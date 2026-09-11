@@ -232,3 +232,138 @@ jobs:
                 ),
                 body: ListView.builder(
                   padding: const EdgeInsets.all(16),
+                  
+                  itemBuilder: (context, index) {
+                    final prod = _produtos[index];
+                    return Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(prod['nome'], style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                IconButton(
+                                  icon: const Icon(Icons.edit, color: Colors.orange),
+                                  onPressed: () => _abrirModalEdicao(prod),
+                                )
+                              ],
+                            ),
+                            Text('Peso: ${prod['peso']} | Fornecedor: ${prod['fornecedor']}'),
+                            Text('Descrição: ${prod['desc']}', style: const TextStyle(color: Colors.grey)),
+                            const Divider(),
+                            Text('Valor: R\$ ${prod['valor'].toStringAsFixed(2)}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF2E7D32))),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              );
+            }
+
+            void _abrirModalEdicao(Map<String, dynamic> produto) {
+              final controller = TextEditingController(text: produto['valor'].toString());
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: Text('Editar Valor - ${produto['nome']}'),
+                  content: TextField(
+                    controller: controller,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(labelText: 'Novo Preço (R\$)'),
+                  ),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2E7D32)),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        if (widget.isMestre) {
+                          setState(() {
+                            produto['valor'] = double.parse(controller.text);
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Valor atualizado instantaneamente pelo Mestre!')));
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Alteração travada! Enviando notificação Push ao Mestre...')));
+                        }
+                      },
+                      child: const Text('Salvar', style: TextStyle(color: Colors.white)),
+                    )
+                  ],
+                ),
+              );
+            }
+
+            Widget _buildCentralNotificacoes() {
+              if (_notificacoes.isEmpty) {
+                return const Center(child: Text('Nenhuma alteração pendente.'));
+              }
+              return ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: _notificacoes.length,
+                itemBuilder: (context, index) {
+                  final notif = _notificacoes[index];
+                  return Card(
+                    color: Colors.amber.shade50,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      key: const ValueKey('notif_card'),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.warning, color: Colors.orange),
+                              const SizedBox(width: 8),
+                              Text('Solicitação de ${notif['operador']}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Text('Produto: ${notif['produto']}'),
+                          Text('De: R\$ ${notif['antigo']} ➔ Para: R\$ ${notif['novo']}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                          Text('Motivo: "${notif['justificativa']}"', style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.grey)),
+                          const SizedBox(height: 15),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              OutlinedButton(
+                                onPressed: () => setState(() => _notificacoes.removeAt(index)),
+                                child: const Text('❌ RECUSAR', style: TextStyle(color: Colors.red)),
+                              ),
+                              const SizedBox(width: 10),
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                                onPressed: () {
+                                  setState(() {
+                                    _notificacoes.removeAt(index);
+                                  });
+                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Alteração aprovada com sucesso!')));
+                                },
+                                child: const Text('✅ APROVAR', style: TextStyle(color: Colors.white)),
+                               ),
+                            ],
+                          )
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              );
+            }
+          }
+          EOF
+
+      - name: Sincronizar Dependencias do Flutter
+        run: flutter pub get
+        
+      - name: Compilar APK Oficial Release
+        run: flutter build apk --release
+        
+      - name: Disponibilizar APK para Download
+        uses: actions/upload-artifact@v4
+        with:
+          name: agrogauer-app
+          path: build/app/outputs/flutter-apk/app-release.apk
