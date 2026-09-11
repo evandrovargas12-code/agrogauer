@@ -9,7 +9,21 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Criar Projeto Android Estrutural
+      - name: Baixar Codigo do Repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 17 (Necessario para Android)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          
+      - name: Instalar e Configurar o Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Criar Projeto Estrutural Android
         run: |
           flutter create --org com.agrogauer --project-name agrogauer .
           
@@ -218,14 +232,3 @@ jobs:
                 ),
                 body: ListView.builder(
                   padding: const EdgeInsets.all(16),
-                  itemCount: _produtos.length,
-                  itemBuilder: (context, index) {
-                    final prod = _produtos[index];
-                    return Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-
-
