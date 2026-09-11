@@ -1,0 +1,348 @@
+Como você concordou, vamos fazer o seguinte: vou te dar o passo a passo exato para você gerar o seu próprio APK real e gratuito agora mesmo, usando o seu navegador de internet, sem precisar instalar nada pesado no seu computador.
+Para fazer isso, nós vamos usar o IDX (uma ferramenta gratuita do Google que roda o Flutter direto no navegador) ou o GitHub Actions. Mas para que você não precise programar nada, eu já preparei toda a estrutura para você apenas copiar e colar.
+Abaixo, dividi em duas partes: o passo a passo para gerar o APK e o código completo do aplicativo pronto para ser usado.
+------------------------------
+## 🛠️ Passo a Passo para Gerar o seu APK Grátis
+
+   1. Acesse o site [Project IDX](https://idx.dev/) (ferramenta gratuita do Google) e faça login com sua conta Gmail.
+   2. Clique em "Create a Workspace" (Criar espaço de trabalho) e selecione a opção Flutter.
+   3. O Google vai abrir uma tela de desenvolvimento direto no seu navegador, idêntica à de um programador profissional, já com um aplicativo modelo rodando na tela.
+   4. No menu lateral esquerdo, procure pelo arquivo chamado lib/main.dart. Abra esse arquivo, apague tudo o que estiver escrito nele e cole o código completo que deixei na seção abaixo.
+   5. No rodapé da tela, clique na aba Terminal e digite exatamente o seguinte comando, apertando Enter depois:
+   
+   flutter build apk --release
+   
+   6. O sistema vai processar o aplicativo por cerca de 1 a 2 minutos. Quando terminar, ele vai exibir uma mensagem de sucesso e mostrará um caminho azul na tela indicando onde o arquivo foi salvo (geralmente dentro da pasta build/app/outputs/flutter-apk/app-release.apk). Basta clicar com o botão direito sobre ele e fazer o download para o seu celular!
+
+------------------------------
+## 📄 Código Completo do Agrogauer (main.dart)
+Substitua todo o conteúdo do arquivo main.dart por este código abaixo. Ele já contém a Tela de Login, o Painel Mestre com as luzes Online/Offline, o Catálogo de Produtos com botão de edição e o simulador de Notificações Push:
+
+import 'package:flutter/material.dart';import 'dart:async';
+void main() {
+  runApp(const AgrogauerApp());
+}
+class AgrogauerApp extends StatelessWidget {
+  const AgrogauerApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Agrogauer',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primarySwatch: Colors.green,
+        primaryColor: const Color(0xFF2E7D32),
+        scaffoldBackgroundColor: const Color(0xFFF5F5F5),
+      ),
+      home: const LoginPage(),
+    );
+  }
+}
+// 1. TELA DE LOGIN RESPONSIVAclass LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+class _LoginPageState extends State<LoginPage> {
+  final _formKey = GlobalKey<FormState>();
+  final _userController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  void _login() {
+    if (_formKey.currentState!.validate()) {
+      bool isMestre = _userController.text.trim().toLowerCase() == 'mestre';
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => PainelMestrePage(isMestre: isMestre)),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    return Scaffold(
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 400),
+            padding: const EdgeInsets.all(32.0),
+            decoration: size.width > 600 ? BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)],
+            ) : null,
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.agriculture, size: 80, color: Color(0xFF2E7D32)),
+                  const SizedBox(height: 10),
+                  const Text('Agrogauer', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF2E7D32))),
+                  const Text('Digite "mestre" para acessar o painel administrador', style: TextStyle(fontSize: 12, color: Colors.grey), textAlign: TextAlign.center),
+                  const SizedBox(height: 30),
+                  TextFormField(
+                    controller: _userController,
+                    decoration: InputDecoration(labelText: 'Usuário', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                    validator: (v) => v!.isEmpty ? 'Insira o usuário' : null,
+                  ),
+                  const SizedBox(height: 20),
+                  TextFormField(
+                    controller: _passwordController,
+                    obscureText: true,
+                    decoration: InputDecoration(labelText: 'Senha', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                    validator: (v) => v!.isEmpty ? 'Insira a senha' : null,
+                  ),
+                  const SizedBox(height: 30),
+                  ElevatedButton(
+                    onPressed: _login,
+                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2E7D32), minimumSize: const Size(double.infinity, 50)),
+                    child: const Text('ENTRAR', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+// 2. PAINEL MESTRE COM MONITOR DE USUÁRIOS (LUZ VERDE/VERMELHA)class PainelMestrePage extends StatefulWidget {
+  final bool isMestre;
+  const PainelMestrePage({super.key, required this.isMestre});
+
+  @override
+  State<PainelMestrePage> createState() => _PainelMestrePageState();
+}
+class _PainelMestrePageState extends State<PainelMestrePage> {
+  int _selectedIndex = 0;
+  
+  // Lista simulada de produtos
+  final List<Map<String, dynamic>> _produtos = [
+    {'nome': 'Fertilizante NPK', 'peso': '50 kg', 'fornecedor': 'AgroFertil', 'desc': 'Alta concentração.', 'valor': 189.90},
+    {'nome': 'Ração Bovinos', 'peso': '25 kg', 'fornecedor': 'NutriCampo', 'desc': 'Ração para engorda.', 'valor': 85.00},
+  ];
+
+  // Lista simulada de alterações pendentes dos operadores
+  final List<Map<String, dynamic>> _notificacoes = [
+    {'operador': 'Carlos Souza', 'produto': 'Fertilizante NPK', 'antigo': 189.90, 'novo': 199.90, 'justificativa': 'Ajuste de frete'}
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    List<Widget> telas = [
+      _buildHomeDashboard(),
+      _buildCatalogoProdutos(),
+      _buildCentralNotificacoes(),
+    ];
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.isMestre ? 'Agrogauer • Painel Mestre' : 'Agrogauer • Operador'),
+        backgroundColor: const Color(0xFF2E7D32),
+        foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.exit_to_app),
+            onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginPage())),
+          )
+        ],
+      ),
+      body: telas[_selectedIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        selectedItemColor: const Color(0xFF2E7D32),
+        onTap: (index) => setState(() => _selectedIndex = index),
+        items: [
+          const BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Equipe'),
+          const BottomNavigationBarItem(icon: Icon(Icons.inventory), label: 'Produtos'),
+          BottomNavigationBarItem(
+            icon: Badge(
+              label: Text('${_notificacoes.length}'),
+              child: const Icon(Icons.notifications),
+            ),
+            label: 'Alertas',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHomeDashboard() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        const Text('Status da Equipe em Tempo Real', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 10),
+        _buildUserCard('Carlos Souza (Vendas)', true, 'Samsung S24'),
+        _buildUserCard('Mariana Costa (Estoque)', true, 'Tablet Agro'),
+        _buildUserCard('João Pedro (Campo)', false, 'Último acesso há 20 min'),
+        _buildUserCard('Amanda Lima (Faturamento)', true, 'Computador Central'),
+      ],
+    );
+  }
+
+  Widget _buildUserCard(String nome, bool online, String detalhes) {
+    return Card(
+      child: ListTile(
+        leading: Container(
+          width: 16,
+          height: 16,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: online ? Colors.green : Colors.red,
+            boxShadow: online ? [BoxShadow(color: Colors.green.withOpacity(0.5), blurRadius: 8, spreadRadius: 2)] : [],
+          ),
+        ),
+        title: Text(nome, style: const TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Text(detalhes),
+      ),
+    );
+  }
+
+  // 3. CATÁLOGO DE PRODUTOS COM BOTÃO DE EDIÇÃO
+  Widget _buildCatalogoProdutos() {
+    return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: const Color(0xFF2E7D32),
+        child: const Icon(Icons.add, color: Colors.white),
+        onPressed: () {},
+      ),
+      body: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _produtos.length,
+        itemBuilder: (context, index) {
+          final prod = _produtos[index];
+          return Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(prod['nome'], style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      IconButton(
+                        icon: const Icon(Icons.edit, color: Colors.orange),
+                        onPressed: () => _abrirModalEdicao(prod),
+                      )
+                    ],
+                  ),
+                  Text('Peso: ${prod['peso']} | Fornecedor: ${prod['fornecedor']}'),
+                  Text('Descrição: ${prod['desc']}', style: const TextStyle(color: Colors.grey)),
+                  const Divider(),
+                  Text('Valor: R\$ ${prod['valor'].toStringAsFixed(2)}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF2E7D32))),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _abrirModalEdicao(Map<String, dynamic> produto) {
+    final controller = TextEditingController(text: produto['valor'].toString());
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Editar Valor - ${produto['nome']}'),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(labelText: 'Novo Preço (R\$)'),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2E7D32)),
+            onPressed: () {
+              Navigator.pop(context);
+              if (widget.isMestre) {
+                setState(() {
+                  produto['valor'] = double.parse(controller.text);
+                });
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Valor atualizado instantaneamente pelo Mestre!')));
+              } else {
+
+ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Alteração travada! Enviando notificação Push ao Mestre...')));
+}
+},
+child: const Text('Salvar', style: TextStyle(color: Colors.white)),
+)
+],
+),
+);
+}
+// 4. CENTRAL DE NOTIFICAÇÕES (APROVAR / RECUSAR)
+Widget _buildCentralNotificacoes() {
+if (_notificacoes.isEmpty) {
+return const Center(child: Text('Nenhuma alteração pendente.'));
+}
+return ListView.builder(
+padding: const EdgeInsets.all(16),
+itemCount: _notificacoes.length,
+itemBuilder: (context, index) {
+final notif = _notificacoes[index];
+return Card(
+color: Colors.amber.shade50,
+child: Padding(
+padding: const EdgeInsets.all(16.0),
+key: const ValueKey('notif_card'),
+child: Column(
+crossAxisAlignment: CrossAxisAlignment.start,
+children: [
+Row(
+children: [
+const Icon(Icons.warning, color: Colors.orange),
+const SizedBox(width: 8),
+Text('Solicitação de ${notif['operador']}', style: const TextStyle(fontWeight: FontWeight.bold)),
+],
+),
+const SizedBox(height: 10),
+Text('Produto: ${notif['produto']}'),
+Text('De: R$ ${notif['antigo']} ➔ Para: R$ ${notif['novo']}', style: const TextStyle(fontWeight: FontWeight.bold)),
+Text('Motivo: "${notif['justificativa']}"', style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.grey)),
+const SizedBox(height: 15),
+Row(
+mainAxisAlignment: MainAxisAlignment.end,
+children: [
+OutlinedButton(
+onPressed: () => setState(() => _notificacoes.removeAt(index)),
+child: const Text('❌ RECUSAR', style: TextStyle(color: Colors.red)),
+),
+const SizedBox(width: 10),
+ElevatedButton(
+style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+onPressed: () {
+setState(() {
+_produtos[0]['valor'] = notif['novo']; // Atualiza o preço simulado
+_notificacoes.removeAt(index);
+});
+ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Alteração aprovada com sucesso!')));
+},
+child: const Text('✅ APROVAR', style: TextStyle(color: Colors.white)),
+),
+],
+)
+],
+),
+),
+);
+},
+);
+}
+}
+
+
+---
+
+Me avise se você conseguiu abrir a plataforma do Google (**Project IDX**) ou se quer que eu te explique como **conectar o banco de dados Firebase** para que os celulares conversem de verdade entre si na sua loja!
+
+
